@@ -1,4 +1,10 @@
 #include <Arduino.h>
+#include "lib/gfx/gfx.h"
+
+// FONT used for title / message body - Only after display library
+//Converting fonts with ümlauts: ./fontconvert *.ttf 18 32 252
+#include <Fonts/ubuntu/Ubuntu_M48pt8b.h>
+#include <Fonts/FreeSansOblique24pt7b.h>
 
 extern "C" {
   #include "eink.h"
@@ -13,57 +19,70 @@ static const char* const TAG = "eink";
 // and makes it easier to allocate larger fragments of memory
 static uint8_t fb[EINK_BUFFER_SIZE] = {0};
 
-// Sample drawing function
-void draw_horizontal_line(uint32_t y, uint8_t width) {
-  for (int d = -width / 2; d < width / 2; d++) {
-    for (int x = 0; x < EINK_WIDTH; x++) {
-      eink_set_pixel(x, y + d, true, fb);
-    }
-  }
-}
+gfx GFX(EINK_WIDTH, EINK_HEIGHT);
 
-// Sample drawing function
-void draw_vertical_line(uint32_t x, uint8_t width) {
-  for (int d = -5; d < 5; d++) {
-    for (int y = 0; y < EINK_HEIGHT; y++) {
-      eink_set_pixel(x + d, y, true, fb);
-    }
-  }
-}
 
 void setup() {
   ESP_LOGI(TAG, "[%ld] setup():", millis());
+  GFX.init(fb);
+  GFX.flush(EPD_WHITE);
+  GFX.flush(EPD_BLACK);
+
+  GFX.setCursor(30, 300);
+  GFX.setFont(&Ubuntu_M48pt8b);
+  GFX.println("GFX Demo");
+  GFX.setCursor(30, 400);
+  GFX.setFont(&FreeSansOblique24pt7b);
+  GFX.println("Just for fun: Print some fast geometric forms");
+
+  GFX.setFont(&Ubuntu_M48pt8b);
+  GFX.fillCircle(400, 100, 50, 1);
+  GFX.fillCircle(600, 100, 50, 1);
+  
+  GFX.flush(EPD_WHITE);
+  GFX.render();
+  delay(3000);
+  GFX.buffer_clear();
 }
+
+uint16_t loop_counter = 0;
+uint16_t circle_radius = 25;
+uint16_t x_ini = 60;
+uint16_t y_ini = 60;
+uint16_t x_circle = x_ini;
+uint16_t y_circle = y_ini;
+uint8_t loops = 0;
 
 void loop() {
-  ESP_LOGI(TAG, "[%ld] loop(): start", millis());
-
-  eink_init(); // this actually can be called just once
-  eink_power_on(); // screen starts consuming more power
-
-  ESP_LOGI(TAG, "[%ld] loop(): initialized", millis());
-
-  // These 2 are optional - clear artifacts for a higher-contrast result
-  eink_flush(false); // white
-  eink_flush(true);  // black
-
-  // Make sure our frame-buffer is all clear
-  eink_buffer_clear(fb);
-
-  static bool line_direction = true;
-  line_direction = !line_direction;
-  if (line_direction) {
-    draw_horizontal_line(EINK_HEIGHT / 2, 10);
-  } else {
-    draw_vertical_line(EINK_WIDTH / 2, 10);
+  if (loops>1) { return; }
+  if (y_circle > EPD_HEIGHT - circle_radius) {
+    y_circle = y_ini;
+    x_circle = x_ini;
+    GFX.buffer_clear();
+    GFX.flush(EPD_WHITE);
+    GFX.flush(EPD_BLACK);
+    loops++;
   }
+  if (y_circle < y_ini *2) {
+    GFX.fillRect(x_circle, y_circle, 20, 20, 1);
+  } else if (y_circle > y_ini *3 && y_circle < y_ini *8) {
+    GFX.setCursor(x_circle, y_circle);
+    GFX.write(rand()%50+48);
+  } else {
+    if (rand()%2+1 == 1) {
+    GFX.fillCircle(x_circle, y_circle, 20, 1);
+    } else {
+    GFX.fillTriangle(x_circle, y_circle, x_circle+20, y_circle, x_circle+20, y_circle+20, 1);
+    }
+  }
+  x_circle = x_circle + x_ini;
 
-  // This actually updates the screen
-  eink_render(fb);
-
-  eink_power_off(); // board back to low power mode
-  eink_deinit(); // this actually can be called just once when we no longer need the screen
-
-  ESP_LOGI(TAG, "[%ld] loop(): finish", millis());
-  delay(2000);
-}
+  if (x_circle > EPD_WIDTH - circle_radius) {
+    x_circle = x_ini;
+    y_circle += y_ini;
+  }
+  
+  GFX.render();
+  delay(100);
+  
+  }

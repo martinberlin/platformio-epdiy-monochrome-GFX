@@ -1,5 +1,14 @@
 # platformio-epdiy-monochrome
-A sample PlatformIO project demonstrating how to use EPDiy in simple monochrome mode
+A sample PlatformIO project demonstrating how to use EPDiy in simple monochrome mode.
+
+@martinberlin : Just forked this to add GFX functions inheriting those from Adafruit GFX.
+
+Performance of the demo including GFX duration: 
+
+```
+121  total full screen updates 
+Took 20893ms
+```
 
 # Requirements
 1. An ESP32 with [EPDiy](https://github.com/vroland/epdiy) compatible display (e.g., [Lilygo T5 E-Paper 4.7](http://www.lilygo.cn/prod_view.aspx?TypeId=50061&Id=1384&FId=t3:50061:3))

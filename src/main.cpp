@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include "lib/gfx/gfx.h"
+#include "esp_timer.h"
 
 // FONT used for title / message body - Only after display library
 //Converting fonts with ümlauts: ./fontconvert *.ttf 18 32 252
@@ -20,7 +21,7 @@ static const char* const TAG = "eink";
 static uint8_t fb[EINK_BUFFER_SIZE] = {0};
 
 gfx GFX(EINK_WIDTH, EINK_HEIGHT);
-
+uint64_t initial_time = 0;
 
 void setup() {
   ESP_LOGI(TAG, "[%ld] setup():", millis());
@@ -33,7 +34,7 @@ void setup() {
   GFX.println("GFX Demo");
   GFX.setCursor(30, 400);
   GFX.setFont(&FreeSansOblique24pt7b);
-  GFX.println("Just for fun: Print some fast geometric forms");
+  GFX.println("Print some fast geometric forms");
 
   GFX.setFont(&Ubuntu_M48pt8b);
   GFX.fillCircle(400, 100, 50, 1);
@@ -43,6 +44,8 @@ void setup() {
   GFX.render();
   delay(3000);
   GFX.buffer_clear();
+  
+  initial_time = esp_timer_get_time();
 }
 
 uint16_t loop_counter = 0;
@@ -52,14 +55,24 @@ uint16_t y_ini = 60;
 uint16_t x_circle = x_ini;
 uint16_t y_circle = y_ini;
 uint8_t loops = 0;
+uint16_t counter = 0;
 
 void loop() {
-  if (loops>1) { return; }
+  counter++;
+  
+  if (loops>0) {
+    if (loops == 1) {
+      printf("Took %lldms\n\n", (esp_timer_get_time()-initial_time)/1000);
+      loops = 2;
+    }
+    return;
+  }
+  printf("%d\n", counter);
+  
   if (y_circle > EPD_HEIGHT - circle_radius) {
     y_circle = y_ini;
     x_circle = x_ini;
     GFX.buffer_clear();
-    GFX.flush(EPD_WHITE);
     GFX.flush(EPD_BLACK);
     loops++;
   }
@@ -83,6 +96,5 @@ void loop() {
   }
   
   GFX.render();
-  delay(100);
   
   }

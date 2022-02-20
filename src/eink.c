@@ -73,7 +73,7 @@ static void eink_fill(uint8_t color) {
     write_row(ROW_DELAY);
   }
 
-  write_row(ROW_DELAY);
+  //write_row(ROW_DELAY);
 
   epd_end_frame();
 }
